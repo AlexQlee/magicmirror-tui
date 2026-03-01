@@ -29,7 +29,7 @@ Ein Terminal-basierter Magic Mirror, gebaut mit [Textual](https://textual.textua
 ## 🚀 Installation
 
 ```bash
-git clone https://github.com/dein-username/magicmirror-tui
+git clone https://github.com/AlexQlee/magicmirror-tui
 cd magicmirror-tui
 pip install -r requirements.txt
 ```
