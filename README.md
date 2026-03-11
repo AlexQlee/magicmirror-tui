@@ -28,7 +28,7 @@ Ein Terminal-basierter Magic Mirror, gebaut mit [Textual](https://textual.textua
 
 ## 🚀 Installation
 
-**Es python 3.12.x sollte verwendet werden, da es bei python 3.14.x zu Fehlern mit psutil kommt.**
+**Python 3.12.x sollte verwendet werden, da es bei Python 3.14.x zu Fehlern mit psutil kommt.**
 
 ```bash
 git clone https://github.com/AlexQlee/magicmirror-tui
