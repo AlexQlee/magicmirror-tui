@@ -2,20 +2,24 @@ from textual.containers import Vertical
 from textual.app import ComposeResult
 from textual.widgets import Label, Static
 import sqlite3
-import random
 import requests
 from datetime import date
 
 DB_PATH = "quotes.db"
 
-# Fallback-Zitate falls API nicht erreichbar
 FALLBACK_QUOTES = [
     ("Albert Einstein", "Die Definition von Wahnsinn ist, immer wieder das Gleiche zu tun und andere Ergebnisse zu erwarten."),
     ("Seneca", "Nicht weil es schwer ist, wagen wir es nicht – weil wir es nicht wagen, ist es schwer."),
     ("Aristoteles", "Wir sind, was wir wiederholt tun. Vorzüglichkeit ist also keine Handlung, sondern eine Gewohnheit."),
 ]
 
+
 class QuoteWidget(Vertical):
+
+    def __init__(self, config: dict, **kwargs):
+        super().__init__(**kwargs)
+        self.language = config.get("language", "de")
+        self.update_interval = config.get("update_interval", 86400)
 
     def compose(self) -> ComposeResult:
         yield Static("💬 Zitat des Tages", id="quote-header")
@@ -25,8 +29,7 @@ class QuoteWidget(Vertical):
     def on_mount(self) -> None:
         self._init_db()
         self.show_quote()
-        # jeden Tag um Mitternacht neues Zitat holen
-        self.set_interval(60 * 60 * 24, self._fetch_and_store)
+        self.set_interval(self.update_interval, self._fetch_and_store)
 
     def _init_db(self) -> None:
         with sqlite3.connect(DB_PATH) as con:
@@ -45,7 +48,6 @@ class QuoteWidget(Vertical):
                     text    TEXT
                 )
             """)
-            # Fallbacks eintragen falls DB leer
             for author, text in FALLBACK_QUOTES:
                 con.execute(
                     "INSERT OR IGNORE INTO quotes (author, text) VALUES (?, ?)",
@@ -53,11 +55,9 @@ class QuoteWidget(Vertical):
                 )
 
     def _fetch_and_store(self) -> None:
-        """Holt neue Zitate von der API und speichert sie in der DB."""
         try:
-            # quotable.io – kostenlos, kein API-Key nötig
             response = requests.get(
-                "https://api.quotable.io/quotes/random?limit=10&language=de",
+                f"https://api.quotable.io/quotes/random?limit=10&language={self.language}",
                 timeout=5
             )
             if response.status_code == 200:
@@ -73,12 +73,8 @@ class QuoteWidget(Vertical):
         except Exception as e:
             self.log(f"⚠️ API nicht erreichbar: {e}")
 
-        # Fallback: ZenQuotes API (englisch)
         try:
-            response = requests.get(
-                "https://zenquotes.io/api/quotes",
-                timeout=5
-            )
+            response = requests.get("https://zenquotes.io/api/quotes", timeout=5)
             if response.status_code == 200:
                 quotes = response.json()
                 with sqlite3.connect(DB_PATH) as con:
@@ -94,14 +90,12 @@ class QuoteWidget(Vertical):
     def _get_quote(self) -> tuple[str, str]:
         today = date.today().isoformat()
         with sqlite3.connect(DB_PATH) as con:
-            # Bereits heute gewählt?
             row = con.execute(
                 "SELECT author, text FROM daily_quote WHERE date = ?", (today,)
             ).fetchone()
             if row:
                 return row
 
-            # Zufälliges Zitat aus der DB wählen
             row = con.execute(
                 "SELECT author, text FROM quotes ORDER BY RANDOM() LIMIT 1"
             ).fetchone()
@@ -117,7 +111,6 @@ class QuoteWidget(Vertical):
             return author, text
 
     def show_quote(self) -> None:
-        # beim ersten Start direkt Zitate holen falls DB fast leer
         with sqlite3.connect(DB_PATH) as con:
             count = con.execute("SELECT COUNT(*) FROM quotes").fetchone()[0]
         if count <= len(FALLBACK_QUOTES):

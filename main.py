@@ -1,24 +1,17 @@
-from datetime import datetime
-
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer
-from textual.containers import Horizontal, Vertical
+from textual.widgets import Footer
+from textual.containers import Horizontal
 
-from config import API_KEY_OPENWEATHERMAP
-from widgets.WeatherWidget import WeatherWidget 
+from config_loader import load_config, get_module_config
+from widgets.WeatherWidget import WeatherWidget
 from widgets.NewsWidget import NewsWidget
 from widgets.SystemInfoWidget import SystemInfoWidget
 from widgets.MyHeader import MyHeader
-
 from widgets.QuoteWidget import QuoteWidget
 # from widgets.CalendarWidget import CalendarWidget
 
+config = load_config()
 
-api_key = API_KEY_OPENWEATHERMAP
-lat = 53.5507
-lon = 9.993
-
-uri = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}"
 
 class MagicMirrorTUI(App):
 
@@ -28,24 +21,31 @@ class MagicMirrorTUI(App):
     CSS_PATH = "magic_mirror.tcss"
 
     def compose(self) -> ComposeResult:
-        yield MyHeader()
+        weather_cfg  = get_module_config(config, "weather")
+        sysinfo_cfg  = get_module_config(config, "system_info")
+        quote_cfg    = get_module_config(config, "quote")
+        news_cfg     = get_module_config(config, "news")
+        header_cfg   = get_module_config(config, "header")
+        # calendar_cfg = get_module_config(config, "calendar")
+
+        yield MyHeader(config=header_cfg)
+
         with Horizontal(id="top-bar"):
-            yield WeatherWidget(uri=uri, id="weather")
-            yield SystemInfoWidget(id="sysinfo")
-        yield QuoteWidget(id="quote")
-        # yield CalendarWidget(id="calendar")
-        yield NewsWidget()
+            if weather_cfg.get("enabled", True):
+                yield WeatherWidget(config=weather_cfg, id="weather")
+            if sysinfo_cfg.get("enabled", True):
+                yield SystemInfoWidget(config=sysinfo_cfg, id="sysinfo")
+
+        if quote_cfg.get("enabled", True):
+            yield QuoteWidget(config=quote_cfg, id="quote")
+
+        # if calendar_cfg.get("enabled", False):
+        #     yield CalendarWidget(id="calendar")
+
+        if news_cfg.get("enabled", True):
+            yield NewsWidget(config=news_cfg)
+
         yield Footer()
-
-    def on_ready(self) -> None:
-        pass
-        # self.update_clock()
-        # self.set_interval(1, self.update_clock)
-
-    def update_clock(self) -> None:
-        pass
-        clock = datetime.now().time()
-        # self.query_one(Digits).update(f"{clock:%T}")
 
 
 if __name__ == "__main__":

@@ -3,7 +3,12 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.widgets import Static, Label, Sparkline
 
+
 class MyHeader(Static):
+
+    def __init__(self, config: dict, **kwargs):
+        super().__init__(**kwargs)
+        self.update_interval = config.get("update_interval", 2)
 
     def compose(self) -> ComposeResult:
         with Horizontal(id="header-bar"):
@@ -12,8 +17,8 @@ class MyHeader(Static):
             yield Sparkline(data=[0] * 20, id="wifi-spark", summary_function=max)
 
     def on_mount(self) -> None:
-        self.signal_history = [0] * 20  # direkt mit 20 Werten füllen
-        self.set_interval(2, self.update_wifi)
+        self.signal_history = [0] * 20
+        self.set_interval(self.update_interval, self.update_wifi)
         self.update_wifi()
 
     def update_wifi(self) -> None:
@@ -24,9 +29,8 @@ class MyHeader(Static):
         if len(self.signal_history) > 20:
             self.signal_history.pop(0)
 
-        # Direkt setzen statt call_after_refresh
         spark = self.query_one("#wifi-spark", Sparkline)
-        spark.data = list(self.signal_history)  # list() erzwingt eine Kopie → triggert das reactive update
+        spark.data = list(self.signal_history)
 
         if signal == 0:
             icon = "❌"
@@ -39,11 +43,7 @@ class MyHeader(Static):
 
         self.query_one("#wifi-icon", Label).update(icon)
 
-    def _update_spark(self) -> None:
-        self.query_one("#wifi-spark", Sparkline).data = self.signal_history
-
     def _get_wifi_signal(self) -> int:
-        # Methode 1: /proc/net/wireless (nur wenn WiFi aktiv)
         try:
             with open("/proc/net/wireless") as f:
                 lines = f.readlines()
@@ -55,12 +55,11 @@ class MyHeader(Static):
         except Exception:
             pass
 
-        # Methode 2: psutil Fallback – schaut ob ein WiFi-Interface aktiv ist
         try:
             stats = psutil.net_if_stats()
             for name, iface in stats.items():
                 if ("wi" in name.lower() or "wl" in name.lower()) and iface.isup:
-                    return 50  # Interface aktiv aber Stärke unbekannt
+                    return 50
         except Exception:
             pass
 

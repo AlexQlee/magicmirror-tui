@@ -1,0 +1,37 @@
+{
+  "modules": {
+    "header": {
+      "enabled": true,
+      "update_interval": 2
+    },
+    "weather": {
+      "enabled": true,
+      "lat": 53.5507,
+      "lon": 9.993,
+      "api_key": "YOUR_OPENWEATHERMAP_API_KEY",
+      "update_interval": 1800
+    },
+    "system_info": {
+      "enabled": true,
+      "update_interval": 1,
+      "disks": ["/", "/home"]
+    },
+    "quote": {
+      "enabled": true,
+      "language": "de",
+      "update_interval": 86400
+    },
+    "news": {
+      "enabled": true,
+      "feeds": {
+        "n-tv": "https://www.n-tv.de/rss",
+        "Spiegel": "https://www.spiegel.de/schlagzeilen/tops/index.rss"
+      },
+      "carousel_interval": 20,
+      "cache_refresh_interval": 900
+    },
+    "calendar": {
+      "enabled": false
+    }
+  }
+}
